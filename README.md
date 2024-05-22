@@ -1,4 +1,4 @@
-# A set of resources for participatin in DataHarvest
+# A set of resources for DataHarvest
 
 This repository contains presentations, code, and data I used at [DataHarvest](https://dataharvest.eu/).
 
