@@ -1,0 +1,170 @@
+-- 1
+SELECT *, 
+       substring(hsn, 1, 2) AS hsn_group
+FROM records
+WHERE regime_id = 1
+LIMIT 10;
+
+-- 2
+SELECT *
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime_id = 1
+) as sq1
+LIMIT 10;
+
+-- 3
+SELECT year || '-' || month as month,
+       hsn_group,
+       SUM(value_usd)
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime = 1
+) as sq1
+GROUP BY year, month, hsn_group
+LIMIT 10;
+
+-- 4
+SELECT year || '-' || month as month,
+       hsn_group,
+       SUM(value_usd)
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime = 1
+) as sq1
+GROUP BY year, month, hsn_group
+HAVING hsn_group = '93';
+
+-- 5
+SELECT year || '-' || month as month,
+       hsn_group,
+       SUM(value_usd)
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime = 1
+) as sq1
+GROUP BY year, month, hsn_group
+HAVING hsn_group = '93'
+ORDER BY month;
+
+-- 6
+SELECT year || '-' || lpad(month::text, 2, '0') as month,
+       hsn_group,
+       SUM(value_usd)
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime = 1
+) as sq1
+GROUP BY year, month, hsn_group
+HAVING hsn_group = '93'
+ORDER BY month;
+
+-- 7
+SELECT year || '-' || lpad(month::text, 2, '0') as month,
+       hsn_group,
+       SUM(value_usd)
+FROM (
+    SELECT *,
+           substring(hsn, 1, 2) AS hsn_group
+    FROM records
+    WHERE regime = 2
+) as sq1
+GROUP BY year, month, hsn_group
+HAVING hsn_group = '93'
+ORDER BY month;
+
+-- 8
+WITH base_cte AS (
+    SELECT year || '-' || lpad(month::text, 2, '0') as month,
+           hsn_group,
+           SUM(value_usd)
+    FROM (
+        SELECT *,
+               substring(hsn, 1, 2) AS hsn_group
+        FROM records
+        WHERE regime = 2
+    ) as sq1
+    GROUP BY year, month, hsn_group
+    HAVING hsn_group = '93'
+    ORDER BY month
+)
+-- main query
+SELECT *
+FROM base_cte;
+
+-- 9
+WITH base_cte AS (
+    SELECT year || '-' || lpad(month::text, 2, '0') as month,
+           hsn_group,
+           SUM(value_usd)
+    FROM (
+        SELECT *,
+               substring(hsn, 1, 2) AS hsn_group
+        FROM records
+        WHERE regime = 2
+    ) as sq1
+    GROUP BY year, month, hsn_group
+    HAVING hsn_group = '93'
+    ORDER BY month
+)
+-- main query
+SELECT *,
+       (sum - AVG(sum) OVER(PARTITION BY hsn_group)) / STDDEV_POP(sum) OVER(PARTITION BY hsn_group) AS  hsn_zscore
+FROM base_cte;
+
+-- 10
+WITH base_cte AS (
+    SELECT year || '-' || lpad(month::text, 2, '0') as month,
+           hsn_group,
+           SUM(value_usd)
+    FROM (
+        SELECT *,
+               substring(hsn, 1, 2) AS hsn_group
+        FROM records
+        WHERE regime = 2
+    ) as sq1
+    GROUP BY year, month, hsn_group
+    HAVING hsn_group = '93'
+    ORDER BY month
+)
+-- main query
+SELECT *,
+       (sum - AVG(sum) OVER(PARTITION BY hsn_group)) / STDDEV_POP(sum) OVER(PARTITION BY hsn_group) AS  hsn_zscore
+FROM base_cte
+WHERE hsn_zscore > 2.576 OR hsn_zscore < -2.576;
+
+-- 11
+WITH base_cte AS (
+    SELECT year || '-' || lpad(month::text, 2, '0') as month,
+           hsn_group,
+           SUM(value_usd)
+    FROM (
+        SELECT *,
+               substring(hsn, 1, 2) AS hsn_group
+        FROM records
+        WHERE regime = 2
+    ) as sq1
+    GROUP BY year, month, hsn_group
+    HAVING hsn_group = '93'
+    ORDER BY month
+)
+-- main query
+SELECT zscore_q.*,
+       groups.name_en
+    SELECT *,
+           (sum - AVG(sum) OVER(PARTITION BY hsn_group)) / STDDEV_POP(sum) OVER(PARTITION BY hsn_group) AS  hsn_zscore
+    FROM base_cte
+) AS zscore_q
+LEFT JOIN groups ON CAST(zscore_q.hsn_group AS INTEGER) = groups.id
+WHERE hsn_zscore > 2.576 OR hsn_zscore < -2.576;
+
